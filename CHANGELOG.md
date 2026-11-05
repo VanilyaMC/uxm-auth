@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/UXPLIMA/uxm-auth/compare/uxm-auth-v0.1.0...uxm-auth-v0.2.0) (2026-11-05)
+
+
+### Features
+
+* **common:** read German, Spanish, French, Portuguese and Russian ([#16](https://github.com/UXPLIMA/uxm-auth/issues/16)) ([1cb77a8](https://github.com/UXPLIMA/uxm-auth/commit/1cb77a8001ff47e0671f5c9c98008a9ebb69ec00))
+
 ## [0.1.0](https://github.com/UXPLIMA/uxm-auth/compare/uxm-auth-v0.0.1...uxm-auth-v0.1.0)
 
 ### Changed
