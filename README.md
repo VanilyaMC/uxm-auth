@@ -1,3 +1,7 @@
+> **VanilyaMC fork note.** This fork is not maintained. Our fixes (UXPLIMA/uxm-auth#23 to #28) were merged
+> upstream through UXPLIMA/uxm-auth#29 and ship in v0.2.0. Use the upstream repository and its releases:
+> https://github.com/UXPLIMA/uxm-auth. The `vanilya` branch here (build `0.1.0-vanilya.2`) is obsolete.
+
 <p align="center">
   <img src="docs/images/banner.jpg" alt="uxmAuth: login for offline-mode servers and networks" width="100%">
 </p>
