@@ -224,7 +224,7 @@ class LogInTest {
         assertThat(logIn(logInUnder(ascii), "şifre123")).isNotInstanceOf(LoginResult.Wrong.class);
     }
 
-    private static final class Accounts implements AccountRepository {
+    static final class Accounts implements AccountRepository {
 
         private final Map<UUID, Account> byId = new HashMap<>();
         private final Map<UUID, Instant> lastLogin = new HashMap<>();
