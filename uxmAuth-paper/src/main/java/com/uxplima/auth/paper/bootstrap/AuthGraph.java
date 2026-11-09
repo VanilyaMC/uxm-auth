@@ -374,7 +374,31 @@ final class AuthGraph implements AutoCloseable {
         this.ownershipWarnings = boot.ownership().warnings();
         this.nameMarks = NameMarkCheck.warnings(
                 NameMarkCheck.paperChecksNames(Path.of("").toAbsolutePath()), boot.ownership());
-        this.rescue = new Rescue(() -> settings.current().spots(), passes, Player::teleportAsync);
+        // The rescue runs from PlayerJoinEvent, where Folia and Canvas refuse a teleport ("Cannot teleport async
+        // during login"): the move goes to the player's next tick on their own scheduler.
+        this.rescue = new Rescue(() -> settings.current().spots(), passes, (player, where) -> {
+            java.util.concurrent.CompletableFuture<Boolean> moved = new java.util.concurrent.CompletableFuture<>();
+            boolean scheduled = player.getScheduler()
+                            .run(
+                                    plugin,
+                                    task -> {
+                                        java.util.concurrent.CompletableFuture<Boolean> unused = player.teleportAsync(
+                                                        where)
+                                                .whenComplete((ok, failure) -> {
+                                                    if (failure != null) {
+                                                        moved.completeExceptionally(failure);
+                                                    } else {
+                                                        moved.complete(ok);
+                                                    }
+                                                });
+                                    },
+                                    () -> moved.complete(false))
+                    != null;
+            if (!scheduled) {
+                moved.complete(false);
+            }
+            return moved;
+        });
         PluginItems pluginItems = new PluginItems();
         HoldKeeper keeper = new HoldKeeper(
                 plugin,
