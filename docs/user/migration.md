@@ -41,11 +41,18 @@ names of `columns` when it is missing; an existing one is used as it is. Everyth
   only what the website changed since.
 - `sha256` is weak: choose it only for a website that reads nothing else.
 
+## A Blysis website
+
+A server whose website is [Blysis](https://github.com/INOVIXI/blysis) turns on the `blysis` block instead of
+`website-table`: the website's members are the password accounts, with no second table. See
+[One account with Blysis](blysis.md). The two cannot both be on.
+
 ## Moving the database
 
 1. Fill `storage.move-to` with the target database, empty of this plugin's tables. A target that holds an
    account is refused and nothing is written.
 2. Run `/uxmauth database move` from the console while nobody plays. The website table moves too when it is on.
+   With `blysis` on, the links to its members move; the members stay in the Blysis database.
 3. Put the target's three lines in place of `storage.jdbc-url`, `username` and `password`, empty `move-to`, and
    restart.
 
