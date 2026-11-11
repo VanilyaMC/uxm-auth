@@ -170,6 +170,9 @@ public enum Keys implements MessageKey {
     LOGIN_USAGE("login.usage", "<tag:'AUTH'> <body>Type your password after the command: <value>/login <password>"),
     LOGIN_ALREADY("login.already", "<tag:'AUTH'> <body>You are already logged in."),
     LOGIN_REFUSED("login.refused", "<tag:'AUTH'> <body>Your login was refused."),
+    LOGIN_CLOSED(
+            "login.closed",
+            "<etag:'ERROR'> <body>This account is banned or closed on the website, so it cannot log in here."),
     CLAIM_UNAVAILABLE(
             "claim.unavailable",
             "<etag:'ERROR'> <body>This server cannot ask Mojang who owns a name, so there is nothing to claim here."),

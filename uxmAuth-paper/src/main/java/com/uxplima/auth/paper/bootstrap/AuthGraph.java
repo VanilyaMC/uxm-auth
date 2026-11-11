@@ -22,6 +22,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 import com.uxplima.auth.adapter.outbound.AuthSettings;
+import com.uxplima.auth.adapter.outbound.BlysisAccounts;
 import com.uxplima.auth.adapter.outbound.LocalEvents;
 import com.uxplima.auth.adapter.outbound.NetworkBulletins;
 import com.uxplima.auth.adapter.outbound.PluginSettings;
@@ -223,6 +224,9 @@ final class AuthGraph implements AutoCloseable {
     final StaffDesk desk;
     final DatabaseDesk databases;
     private final ClosedDoor closedDoor;
+    /** The members of a Blysis website, with the pool on its database, while Blysis keeps the passwords. */
+    private final @Nullable BlysisAccounts blysis;
+
     private final JoinMessages joinMessages;
     private final Rescue rescue;
     final RecoverCommand recover;
@@ -278,9 +282,20 @@ final class AuthGraph implements AutoCloseable {
         this.lane = new HashingLane(sizes.threads(), sizes.maxThreads(), sizes.queue());
         this.channelReports = new ChannelReports(plugin, () -> claims(settings), Clock.systemUTC());
         Hashing hashing = boot.hashers().observed(timings::start, spent -> timings.record(Timings.Kind.HASHING, spent));
+        this.blysis = boot.blysis().enabled()
+                ? BlysisAccounts.open(
+                        new SqlAccountRepository(database),
+                        database,
+                        boot.blysis(),
+                        Clock.systemUTC(),
+                        plugin.getName(),
+                        plugin.getLogger()::warning)
+                : null;
         AccountRepository accounts = new TimedAccounts(
-                WebsiteAccounts.beside(
-                        new SqlAccountRepository(database), database, boot.websiteTable(), Clock.systemUTC()),
+                blysis != null
+                        ? blysis
+                        : WebsiteAccounts.beside(
+                                new SqlAccountRepository(database), database, boot.websiteTable(), Clock.systemUTC()),
                 timings);
         SqlRememberedSessions remembered = new SqlRememberedSessions(database);
         this.history = new SqlLoginHistory(database);
@@ -288,7 +303,8 @@ final class AuthGraph implements AutoCloseable {
                 remembered,
                 () -> settings.current().protection().sessions(),
                 () -> settings.current().protection().sharedAddresses(),
-                Instant::now);
+                Instant::now,
+                accounts::closed);
         AddressBans bans = new AddressBans(
                 new SqlAddressTallies(database),
                 () -> settings.current().protection().bans(),
@@ -799,6 +815,9 @@ final class AuthGraph implements AutoCloseable {
         web.close();
         mail.close();
         lane.close();
+        if (blysis != null) {
+            blysis.close();
+        }
     }
 
     /** Fetches the country file when it is due and opens the book on it. */

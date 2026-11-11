@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import com.uxplima.auth.application.port.RememberedSessions;
@@ -38,16 +39,28 @@ public final class Remember {
     private final Supplier<Settings> settings;
     private final Supplier<SharedAddresses> shared;
     private final Supplier<Instant> clock;
+    private final Predicate<UUID> closed;
 
     public Remember(
             RememberedSessions store,
             Supplier<Settings> settings,
             Supplier<SharedAddresses> shared,
             Supplier<Instant> clock) {
+        this(store, settings, shared, clock, account -> false);
+    }
+
+    /** @param closed whether the website that keeps an account's password banned or closed it: it resumes nothing */
+    public Remember(
+            RememberedSessions store,
+            Supplier<Settings> settings,
+            Supplier<SharedAddresses> shared,
+            Supplier<Instant> clock,
+            Predicate<UUID> closed) {
         this.store = Objects.requireNonNull(store, "store");
         this.settings = Objects.requireNonNull(settings, "settings");
         this.shared = Objects.requireNonNull(shared, "shared");
         this.clock = Objects.requireNonNull(clock, "clock");
+        this.closed = Objects.requireNonNull(closed, "closed");
     }
 
     /** The account logged in from this address, through this host: remember it when the rules say so. */
@@ -77,7 +90,8 @@ public final class Remember {
         if (settings.get().mode() == Mode.OFF || shared.get().through(address, Objects.requireNonNull(host, "host"))) {
             return false;
         }
-        return store.holds(account, address, clock.get());
+        // A closed account is sent to the password, which then tells the player why.
+        return store.holds(account, address, clock.get()) && !closed.test(account);
     }
 
     /** The account chose sessions, or no sessions; choosing none ends the ones it has. */

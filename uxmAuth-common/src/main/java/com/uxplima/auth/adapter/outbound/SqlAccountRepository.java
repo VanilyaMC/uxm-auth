@@ -66,7 +66,7 @@ public final class SqlAccountRepository implements AccountRepository, AccountLis
 
     /**
      * What every other store keeps under an account's id: the app and backup codes, the mail address and its codes,
-     * the login history and the last server. A deleted account drops them, so a later account under the same id,
+     * the login history, the last server and the Blysis link. A deleted account drops them, so a later account under the same id,
      * which an offline id derived from the name is, inherits none of them; a moved id takes them along.
      */
     private static final List<String> DROP_KEPT = List.of(
@@ -76,7 +76,8 @@ public final class SqlAccountRepository implements AccountRepository, AccountLis
             "DELETE FROM uxmauth_mail_code WHERE account_id = ?",
             "DELETE FROM uxmauth_login WHERE account_id = ?",
             "DELETE FROM uxmauth_last_server WHERE account_id = ?",
-            "DELETE FROM uxmauth_website_link WHERE account_id = ?");
+            "DELETE FROM uxmauth_website_link WHERE account_id = ?",
+            "DELETE FROM uxmauth_blysis_link WHERE account_id = ?");
 
     private static final List<String> MOVE_KEPT = List.of(
             "UPDATE uxmauth_factor SET account_id = ? WHERE account_id = ?",
@@ -85,7 +86,8 @@ public final class SqlAccountRepository implements AccountRepository, AccountLis
             "UPDATE uxmauth_mail_code SET account_id = ? WHERE account_id = ?",
             "UPDATE uxmauth_login SET account_id = ? WHERE account_id = ?",
             "UPDATE uxmauth_last_server SET account_id = ? WHERE account_id = ?",
-            "UPDATE uxmauth_website_link SET account_id = ? WHERE account_id = ?");
+            "UPDATE uxmauth_website_link SET account_id = ? WHERE account_id = ?",
+            "UPDATE uxmauth_blysis_link SET account_id = ? WHERE account_id = ?");
 
     private final Database database;
 
@@ -313,6 +315,13 @@ public final class SqlAccountRepository implements AccountRepository, AccountLis
                 });
             }
         });
+    }
+
+    /** Nothing here bans an account: the address bans and the lockout are kept elsewhere. */
+    @Override
+    public boolean closed(UUID id) {
+        Objects.requireNonNull(id, "id");
+        return false;
     }
 
     /** Binds every column but the id, in table order, starting at {@code first}. */

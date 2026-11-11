@@ -18,6 +18,7 @@ import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
 import com.uxplima.auth.adapter.outbound.AuthSettings;
+import com.uxplima.auth.adapter.outbound.BlysisAccounts;
 import com.uxplima.auth.adapter.outbound.DoorWords;
 import com.uxplima.auth.adapter.outbound.LocalEvents;
 import com.uxplima.auth.adapter.outbound.NetworkBulletins;
@@ -108,6 +109,7 @@ final class ProxyGraph implements AutoCloseable {
 
     private NetworkEvents events = new LocalEvents();
     private @Nullable CountryBook countries;
+    private @Nullable BlysisAccounts blysis;
     private @Nullable ScheduledTask countryTask;
     private @Nullable ProxyMail mail;
     /** The API's Velocity events, fired for what happens at this proxy. */
@@ -145,8 +147,24 @@ final class ProxyGraph implements AutoCloseable {
             return;
         }
         Clock clock = Clock.systemUTC();
-        AccountRepository accounts = WebsiteAccounts.beside(
-                new SqlAccountRepository(database), database, settings.current().websiteTable(), clock);
+        AccountRepository accounts;
+        if (settings.current().blysis().enabled()) {
+            BlysisAccounts members = BlysisAccounts.open(
+                    new SqlAccountRepository(database),
+                    database,
+                    settings.current().blysis(),
+                    clock,
+                    "uxmAuth",
+                    logger::warn);
+            this.blysis = members;
+            accounts = members;
+        } else {
+            accounts = WebsiteAccounts.beside(
+                    new SqlAccountRepository(database),
+                    database,
+                    settings.current().websiteTable(),
+                    clock);
+        }
         ProxyDoor door = door(settings, accounts, new SqlDisputes(database), clock);
         NetworkSecret secret = secret(settings);
         // Sealed with the secret every member shares, so a code set up on any server reads here.
@@ -156,7 +174,8 @@ final class ProxyGraph implements AutoCloseable {
                 remembered,
                 () -> settings.current().protection().sessions(),
                 () -> settings.current().protection().sharedAddresses(),
-                clock::instant);
+                clock::instant,
+                accounts::closed);
         AddressBans bans = new AddressBans(
                 new SqlAddressTallies(database),
                 () -> settings.current().protection().bans(),
@@ -393,6 +412,10 @@ final class ProxyGraph implements AutoCloseable {
         waiting.close();
         if (mail != null) {
             mail.close();
+        }
+        if (blysis != null) {
+            blysis.close();
+            blysis = null;
         }
     }
 
